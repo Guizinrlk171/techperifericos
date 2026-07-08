@@ -1,5 +1,5 @@
 const products = [
-  { id: 1, name: 'Teclado Mecânico Gamer RGB', desc: 'Switch azul, iluminação RGB, 104 teclas', price: 189.90, img: 'https://images.unsplash.com/photo-1541140532154-b024d1a0a94b?w=300&h=300&fit=crop', category: 'teclados' },
+  { id: 1, name: 'Teclado Mecânico Gamer RGB', desc: 'Switch azul, iluminação RGB, 104 teclas', price: 189.90, img: '/images/teclado1.jpg', category: 'teclados' },
   { id: 2, name: 'Teclado Semi-Mecânico Slim', desc: 'Teclas silenciosas, design ultrafino, USB-C', price: 119.90, img: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=300&h=300&fit=crop', category: 'teclados' },
   { id: 3, name: 'Teclado Membrana Office', desc: 'Confortável para digitação, teclas silenciosas', price: 49.90, img: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=300&h=300&fit=crop', category: 'teclados' },
   { id: 4, name: 'Teclado Mecânico Compacto 60%', desc: 'Switch red, layout minimalista, RGB', price: 159.90, img: 'https://images.unsplash.com/photo-1775258533582-96f5c0b54374?w=300&h=300&fit=crop', category: 'teclados' },
@@ -8,12 +8,12 @@ const products = [
   { id: 7, name: 'Mouse Sem Fio Bluetooth', desc: 'Recarregável, silencioso, 3 modos DPI', price: 69.90, img: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=300&h=300&fit=crop', category: 'mouses' },
   { id: 8, name: 'Mouse Ergonômico Vertical', desc: 'Previne LER, design vertical natural', price: 109.90, img: 'https://images.unsplash.com/photo-1616071358846-9f34f471815d?w=300&h=300&fit=crop', category: 'mouses' },
   { id: 9, name: 'Mouse Gamer Sem Fio', desc: 'Baixa latência, 16000DPI, bateria 70h', price: 199.90, img: 'https://images.unsplash.com/photo-1565788061370-4771680a4df2?w=300&h=300&fit=crop', category: 'mouses' },
-  { id: 10, name: 'Mouse Básico USB', desc: 'Simples e funcional, 3 botões, 1000DPI', price: 24.90, img: 'https://images.unsplash.com/photo-1595348026445-5c0b2bc6c2ae?w=300&h=300&fit=crop', category: 'mouses' },
+  { id: 10, name: 'Mouse Básico USB', desc: 'Simples e funcional, 3 botões, 1000DPI', price: 24.90, img: '/images/mouse5.jpg', category: 'mouses' },
   { id: 11, name: 'Mousepad Gamer Grande', desc: '90x40cm, base antiderrapante, superfície lisa', price: 59.90, img: 'https://images.unsplash.com/photo-1698934688594-3917103b70ce?w=300&h=300&fit=crop', category: 'mousepads' },
   { id: 12, name: 'Mousepad Médio Speed', desc: '40x30cm, bordas costuradas, tecido suave', price: 34.90, img: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?w=300&h=300&fit=crop', category: 'mousepads' },
-  { id: 13, name: 'Mousepad com Apoio de Pulso', desc: 'Gel memory foam, alivia tensão no punho', price: 44.90, img: 'https://images.unsplash.com/photo-1611486212557-88be5ff6f941?w=300&h=300&fit=crop', category: 'mousepads' },
-  { id: 14, name: 'Mousepad XXL Gamer', desc: '120x60cm, cobre mesa inteira, impermeável', price: 89.90, img: 'https://images.unsplash.com/photo-1631726716710-f96e4c9fc203?w=300&h=300&fit=crop', category: 'mousepads' },
-  { id: 15, name: 'Mousepad Rígido Speed', desc: 'Superfície dura, base de alumínio, precisão máxima', price: 74.90, img: 'https://images.unsplash.com/photo-1611078489935-0cb2d18dcf56?w=300&h=300&fit=crop', category: 'mousepads' },
+  { id: 13, name: 'Mousepad com Apoio de Pulso', desc: 'Gel memory foam, alivia tensão no punho', price: 44.90, img: '/images/mousepad5.jpg', category: 'mousepads' },
+  { id: 14, name: 'Mousepad XXL Gamer', desc: '120x60cm, cobre mesa inteira, impermeável', price: 89.90, img: '/images/mousepad4.jpg', category: 'mousepads' },
+  { id: 15, name: 'Mousepad Rígido Speed', desc: 'Superfície dura, base de alumínio, precisão máxima', price: 74.90, img: 'https://images.unsplash.com/photo-1611486212557-88be5ff6f941?w=300&h=300&fit=crop', category: 'mousepads' },
 ];
 
 let cart = [];
@@ -167,6 +167,16 @@ function resetPixSections() {
   document.getElementById('qrcode').innerHTML = '';
   document.getElementById('btn-gerar-pix').disabled = false;
   document.getElementById('btn-gerar-pix').textContent = 'Gerar QR Code PIX';
+}
+
+function selectPayment(method) {
+  document.getElementById('tab-pix').classList.toggle('active', method === 'pix');
+  document.getElementById('tab-card').classList.toggle('active', method === 'card');
+  if (method === 'card') {
+    showToast('Cartão de crédito estará disponível em breve!');
+    document.getElementById('tab-pix').classList.add('active');
+    document.getElementById('tab-card').classList.remove('active');
+  }
 }
 
 function selectPayment(method) {
@@ -501,6 +511,8 @@ function toggleTheme() {
   applyTheme();
 }
 
+applyTheme();
+loadAuth();
 applyTheme();
 loadAuth();
 
