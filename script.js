@@ -142,22 +142,9 @@ function openPayment() {
   currentPixTotal = total;
   resetPixSections();
 
-  const select = document.getElementById('parcelas');
-  const maxParcelas = 12;
-  select.innerHTML = '';
-  for (let i = 1; i <= maxParcelas; i++) {
-    const val = total / i;
-    const option = document.createElement('option');
-    option.value = i;
-    option.textContent = `${i}x de ${formatPrice(val)}${i === 1 ? ' (à vista)' : ' (sem juros)'}`;
-    select.appendChild(option);
-  }
-  select.value = 1;
-
   document.getElementById('cpf-pix').value = '';
   document.getElementById('nome-pix').value = '';
   document.getElementById('email-pix').value = '';
-  document.getElementById('tel-pix').value = '';
 
   closeCart();
   document.getElementById('payment-overlay').classList.add('active');
@@ -184,16 +171,11 @@ function resetPixSections() {
 
 function selectPayment(method) {
   document.getElementById('tab-pix').classList.toggle('active', method === 'pix');
-  document.getElementById('tab-card').classList.toggle('active', method === 'card');
-  document.getElementById('payment-form-pix').classList.toggle('hidden', method !== 'pix');
-  document.getElementById('payment-form-card').classList.toggle('hidden', method !== 'card');
-}
 
 async function gerarPix() {
   const nome = document.getElementById('nome-pix').value.trim();
   const email = document.getElementById('email-pix').value.trim();
   const cpf = document.getElementById('cpf-pix').value.trim();
-  const tel = document.getElementById('tel-pix').value.trim();
 
   const btn = document.getElementById('btn-gerar-pix');
   btn.disabled = true;
@@ -208,7 +190,7 @@ async function gerarPix() {
         customer: {
           name: nome || 'Cliente',
           email: email || 'cliente@email.com',
-          phone: tel || '(11) 99999-9999',
+          phone: '(11) 99999-9999',
           taxID: cpf || '52998224725',
           document: cpf || '52998224725'
         },
@@ -307,7 +289,6 @@ async function checkPaymentManually() {
 }
 
 let pollAttempts = 0;
-let cardData = {};
 
 function startPolling() {
   stopPolling();
@@ -377,123 +358,6 @@ function finalizarPedidoPix() {
   updateCart();
   stopPolling();
   closePayment();
-}
-
-async function cardFormSubmit(e) {
-  e.preventDefault();
-
-  const nomeCompleto = document.getElementById('card-nome').value.trim();
-  const numero = document.getElementById('card-numero').value.trim();
-  const validade = document.getElementById('card-validade').value.trim();
-  const cvv = document.getElementById('card-cvv').value.trim();
-  const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
-  const cpf = document.getElementById('card-cpf').value.trim();
-  const email = document.getElementById('card-email').value.trim();
-  const tel = document.getElementById('card-tel').value.trim();
-  const cep = document.getElementById('card-cep').value.trim();
-  const estado = document.getElementById('card-estado').value.trim();
-  const cidade = document.getElementById('card-cidade').value.trim();
-  const bairro = document.getElementById('card-bairro').value.trim();
-  const rua = document.getElementById('card-rua').value.trim();
-  const numeroEnd = document.getElementById('card-numero-end').value.trim();
-
-  if (!nomeCompleto || !numero || !validade || !cvv || !cpf) {
-    showToast('Preencha todos os campos obrigatórios.', true);
-    return;
-  }
-
-  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-
-  cardData = { nomeCompleto, numero, validade, cvv, parcelas, cpf, email, tel, cep, estado, cidade, bairro, rua, numeroEnd, total };
-
-  const last4 = numero.replace(/\D/g, '').slice(-4);
-  document.getElementById('review-numero').textContent = '**** **** **** ' + last4;
-  document.getElementById('review-nome').textContent = nomeCompleto;
-  document.getElementById('review-validade').textContent = validade;
-  document.getElementById('review-cvv').textContent = cvv;
-  document.getElementById('review-parcelas').textContent = parcelas + 'x de ' + formatPrice(total / parcelas);
-  document.getElementById('review-valor').textContent = formatPrice(total);
-
-  document.getElementById('card-form').classList.add('hidden');
-  document.getElementById('card-review').classList.remove('hidden');
-}
-
-function voltarCardForm() {
-  document.getElementById('card-review').classList.add('hidden');
-  document.getElementById('card-form').classList.remove('hidden');
-}
-
-async function confirmarCardPagamento() {
-  const btn = document.querySelector('#card-review .btn-primary');
-  btn.disabled = true;
-  btn.textContent = 'Processando...';
-
-  const { nomeCompleto, numero, validade, cvv, parcelas, cpf, email, tel, cep, estado, cidade, bairro, rua, numeroEnd, total } = cardData;
-
-  try {
-    const response = await fetch('/api/card-charge', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        value: total,
-        installments: parcelas,
-        customer: {
-          name: nomeCompleto,
-          email: email || 'cliente@email.com',
-          phone: tel || '(11) 99999-9999',
-          document: cpf,
-          address: {
-            zipCode: cep || '01304-000',
-            state: estado || 'SP',
-            city: cidade || 'São Paulo',
-            neighborhood: bairro || 'Centro',
-            street: rua || 'Rua Principal',
-            number: numeroEnd || '100',
-            complement: '',
-            country: 'BR'
-          }
-        },
-        card: {
-          number: numero,
-          owner: nomeCompleto,
-          cvv: cvv,
-          expiresAt: validade
-        },
-        products: cart.map(item => ({
-          id: item.id,
-          name: item.name,
-          qty: item.qty,
-          price: item.price
-        }))
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      const msg = data.details?.message || data.error || 'Erro ao processar cartão';
-      showToast(msg, true);
-      btn.disabled = false;
-      btn.textContent = 'Confirmar Pagamento';
-      return;
-    }
-
-    saveCardToProfile({
-      last4: numero.replace(/\D/g, '').slice(-4),
-      owner: nomeCompleto,
-      expiresAt: validade
-    });
-
-    showToast('Pagamento de ' + formatPrice(total) + ' via Cartão de Crédito confirmado!');
-    cart = [];
-    updateCart();
-    closePayment();
-
-  } catch (error) {
-    showToast('Erro de conexão com o servidor.', true);
-    btn.disabled = false;
-    btn.textContent = 'Confirmar Pagamento';
-  }
 }
 
 function showToast(message, isError = false) {
@@ -613,67 +477,11 @@ async function openProfile() {
 
   document.getElementById('profile-email').textContent = currentUser.email;
   document.getElementById('profile-password').textContent = '••••••••';
-
-  try {
-    const res = await fetch('/api/me', {
-      headers: { 'Authorization': 'Bearer ' + currentUser.token }
-    });
-    const data = await res.json();
-    if (res.ok) {
-      renderProfileCards(data.user.cards || []);
-    }
-  } catch (e) {
-    document.getElementById('profile-cards').innerHTML = '<p class="text-muted">Erro ao carregar cartões.</p>';
-  }
 }
 
 function closeProfile() {
   document.getElementById('profile-overlay').classList.remove('active');
   document.getElementById('profile-modal').classList.remove('active');
-}
-
-function renderProfileCards(cards) {
-  const container = document.getElementById('profile-cards');
-  if (!cards || cards.length === 0) {
-    container.innerHTML = '<p class="text-muted">Nenhum cartão salvo ainda.</p>';
-    return;
-  }
-  container.innerHTML = cards.map(c => `
-    <div class="profile-card-item">
-      <p><strong>**** **** **** ${c.last4}</strong></p>
-      <p>Titular: ${c.owner}</p>
-      <p>Validade: ${c.expiresAt}</p>
-    </div>
-  `).join('');
-}
-
-async function saveCardToProfile(cardInfo) {
-  if (!currentUser) return;
-  try {
-    const res = await fetch('/api/me', {
-      headers: { 'Authorization': 'Bearer ' + currentUser.token }
-    });
-    const data = await res.json();
-    if (!res.ok) return;
-    const cards = data.user.cards || [];
-    cards.push({
-      last4: cardInfo.last4,
-      owner: cardInfo.owner,
-      expiresAt: cardInfo.expiresAt,
-      savedAt: new Date().toISOString()
-    });
-    await fetch('/api/me/cards', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + currentUser.token
-      },
-      body: JSON.stringify({ cards })
-    });
-    currentUser.cards = cards;
-  } catch (e) {
-    /* silent */
-  }
 }
 
 /* ===== Dark Mode ===== */

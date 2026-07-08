@@ -30,9 +30,6 @@
   --footer-text: #ccc;
   --section-title: #1a1a2e;
   --overlay: rgba(0,0,0,0.5);
-  --review-bg: #1a1a2e;
-  --review-border: #333;
-  --review-text: #ccc;
 }
 
 [data-theme="dark"] {
@@ -58,9 +55,6 @@
   --section-title: #e0e0e0;
   --hero-sub: #888;
   --footer-text: #888;
-  --review-bg: #2a2a2a;
-  --review-border: #444;
-  --review-text: #bbb;
 }
 
 * {
@@ -775,24 +769,6 @@ footer {
   border-color: #e94560;
 }
 
-#card-review {
-  margin-top: 16px;
-  padding: 16px;
-  background: var(--review-bg);
-  border-radius: 12px;
-  border: 1px solid var(--review-border);
-}
-
-.review-card p {
-  margin: 6px 0;
-  font-size: 0.9rem;
-  color: var(--review-text);
-}
-
-.review-card strong {
-  color: var(--accent);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .hero h1 {
@@ -996,23 +972,6 @@ footer {
 }
 
 .profile-info strong {
-  color: var(--text);
-}
-
-.profile-card-item {
-  background: var(--bg-surface);
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.profile-card-item p {
-  margin: 3px 0;
-}
-
-.profile-card-item strong {
   color: var(--text);
 }
 

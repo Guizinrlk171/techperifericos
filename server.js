@@ -52,12 +52,11 @@ app.post('/api/register', (req, res) => {
     id: crypto.randomUUID(),
     email,
     password,
-    cards: [],
     created_at: new Date().toISOString()
   };
   users.push(user);
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-  res.json({ token, user: { id: user.id, email: user.email, cards: user.cards } });
+  res.json({ token, user: { id: user.id, email: user.email } });
 });
 
 app.post('/api/login', (req, res) => {
@@ -70,20 +69,11 @@ app.post('/api/login', (req, res) => {
     return res.status(401).json({ error: 'Email ou senha incorretos' });
   }
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-  res.json({ token, user: { id: user.id, email: user.email, cards: user.cards } });
+  res.json({ token, user: { id: user.id, email: user.email } });
 });
 
 app.get('/api/me', authMiddleware, (req, res) => {
-  res.json({ user: { id: req.user.id, email: req.user.email, cards: req.user.cards } });
-});
-
-app.put('/api/me/cards', authMiddleware, (req, res) => {
-  const { cards } = req.body;
-  if (!Array.isArray(cards)) {
-    return res.status(400).json({ error: 'Lista de cartões inválida' });
-  }
-  req.user.cards = cards;
-  res.json({ cards: req.user.cards });
+  res.json({ user: { id: req.user.id, email: req.user.email } });
 });
 
 function sigiloRequest(endpoint, bodyStr) {
@@ -143,15 +133,6 @@ function formatPhone(phone) {
   return phone;
 }
 
-function formatZip(zip) {
-  if (!zip) return '01304-000';
-  const cleaned = zip.replace(/\D/g, '');
-  if (cleaned.length === 8) {
-    return cleaned.replace(/(\d{5})(\d{3})/, '$1-$2');
-  }
-  return zip;
-}
-
 function buildProducts(reqProducts, fallbackValue) {
   const products = (reqProducts || []).map((p, i) => ({
     id: String(p.id || `prod_${i}`),
@@ -207,75 +188,6 @@ app.post('/api/create-charge', async (req, res) => {
 
   } catch (error) {
     console.error('Error creating PIX charge:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-app.post('/api/card-charge', async (req, res) => {
-  try {
-    const { value, customer, card, installments, products: reqProducts } = req.body;
-
-    if (!value || value <= 0) {
-      return res.status(400).json({ error: 'Valor inválido' });
-    }
-    if (!customer?.address) {
-      return res.status(400).json({ error: 'Endereço do cliente é obrigatório' });
-    }
-    if (!card?.number || !(card?.owner || card?.holderName) || !card?.cvv || !(card?.expiresAt || card?.expiration)) {
-      return res.status(400).json({ error: 'Dados do cartão incompletos' });
-    }
-
-    const identifier = crypto.randomUUID();
-    const products = buildProducts(reqProducts, value);
-
-    const body = {
-      identifier,
-      amount: value,
-      client: {
-        name: customer.name || 'Cliente',
-        email: customer.email || 'cliente@email.com',
-        phone: formatPhone(customer.phone),
-        document: formatDoc(customer.document),
-        address: {
-          country: customer.address.country || 'BR',
-          zipCode: formatZip(customer.address.zipCode) || '01304-000',
-          state: customer.address.state || 'SP',
-          city: customer.address.city || 'São Paulo',
-          neighborhood: customer.address.neighborhood || 'Centro',
-          street: customer.address.street || 'Rua Principal',
-          number: customer.address.number || '100',
-          complement: customer.address.complement || ''
-        }
-      },
-      card: {
-        number: card.number.replace(/\s/g, ''),
-        owner: card.owner || card.holderName,
-        expiresAt: card.expiresAt || card.expiration?.replace(/^(\d{2})\/?(\d{2,4})$/, (m, m1, m2) => m2.length === 4 ? m2 + '-' + m1 : '20' + m2 + '-' + m1) || '2028-12',
-        cvv: card.cvv
-      },
-      clientIp: req.ip || req.connection?.remoteAddress || '127.0.0.1',
-      installments: installments || 1,
-      products
-    };
-
-    const { status, data } = await sigiloRequest('card/receive', JSON.stringify(body));
-
-    if (status !== 200) {
-      return res.status(status).json({ error: 'Erro ao processar cartão', details: data });
-    }
-
-    transactions[data.transactionId] = { status: data.status, value, created_at: new Date().toISOString() };
-
-    res.json({
-      transactionId: data.transactionId,
-      status: data.status,
-      value,
-      orderUrl: data.order?.url,
-      receiptUrl: data.order?.receiptUrl
-    });
-
-  } catch (error) {
-    console.error('Error processing card:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
