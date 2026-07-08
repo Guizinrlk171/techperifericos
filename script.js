@@ -179,9 +179,6 @@ function selectPayment(method) {
   }
 }
 
-function selectPayment(method) {
-  document.getElementById('tab-pix').classList.toggle('active', method === 'pix');
-
 async function gerarPix() {
   const nome = document.getElementById('nome-pix').value.trim();
   const email = document.getElementById('email-pix').value.trim();
@@ -511,8 +508,6 @@ function toggleTheme() {
   applyTheme();
 }
 
-applyTheme();
-loadAuth();
 applyTheme();
 loadAuth();
 
