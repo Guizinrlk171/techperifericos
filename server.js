@@ -76,14 +76,15 @@ app.get('/api/me', authMiddleware, (req, res) => {
   res.json({ user: { id: req.user.id, email: req.user.email } });
 });
 
-function sigiloRequest(endpoint, bodyStr) {
+function sigiloRequest(endpoint, bodyStr, method) {
+  method = method || 'POST';
   return new Promise((resolve, reject) => {
     dns.resolve4('app.sigilopay.com.br', (err, addresses) => {
       if (err) return reject(new Error('DNS fail: ' + err.message));
       const opts = {
         hostname: addresses[0],
         path: '/api/v1/gateway/' + endpoint,
-        method: 'POST',
+        method: method,
         headers: {
           'x-public-key': SIGILO_PUBLIC_KEY,
           'x-secret-key': SIGILO_SECRET_KEY,
@@ -103,7 +104,7 @@ function sigiloRequest(endpoint, bodyStr) {
         });
       });
       req.on('error', reject);
-      req.write(bodyStr);
+      if (bodyStr) req.write(bodyStr);
       req.end();
     });
   });
@@ -174,10 +175,19 @@ app.post('/api/create-charge', async (req, res) => {
       return res.status(status).json({ error: 'Erro ao criar cobrança PIX', details: data });
     }
 
-    transactions[data.transactionId] = { status: 'PENDING', value, created_at: new Date().toISOString() };
+    console.log('SigiloPay PIX response:', JSON.stringify(data, null, 2));
+
+    const txId = data.transactionId || data.id || identifier;
+    transactions[txId] = {
+      status: 'PENDING',
+      value,
+      sigiloId: data.id || data.transactionId,
+      identifier,
+      created_at: new Date().toISOString()
+    };
 
     res.json({
-      transactionId: data.transactionId,
+      transactionId: txId,
       brCode: data.pix.code,
       pixCode: data.pix.code,
       status: data.status,
@@ -192,7 +202,7 @@ app.post('/api/create-charge', async (req, res) => {
   }
 });
 
-app.get('/api/charge-status/:transactionId', (req, res) => {
+app.get('/api/charge-status/:transactionId', async (req, res) => {
   const { transactionId } = req.params;
   const tx = transactions[transactionId];
 
@@ -200,20 +210,32 @@ app.get('/api/charge-status/:transactionId', (req, res) => {
     return res.status(404).json({ error: 'Transação não encontrada', status: 'PENDING' });
   }
 
-  res.json({ status: tx.status, paid_at: tx.paid_at || null });
-});
-
-app.post('/api/confirm-payment/:transactionId', (req, res) => {
-  const { transactionId } = req.params;
-  const tx = transactions[transactionId];
-
-  if (!tx) {
-    return res.status(404).json({ error: 'Transação não encontrada' });
+  if (tx.status === 'COMPLETED') {
+    return res.json({ status: 'COMPLETED', paid_at: tx.paid_at });
   }
 
-  tx.status = 'COMPLETED';
-  tx.paid_at = new Date().toISOString();
-  res.json({ status: 'COMPLETED', paid_at: tx.paid_at });
+  try {
+    const sigiloId = tx.sigiloId || transactionId;
+    const result = await sigiloRequest('transactions?id=' + encodeURIComponent(sigiloId), null, 'GET');
+
+    if (result.status === 200 && result.data) {
+      const remoteStatus = result.data.status;
+      if (remoteStatus === 'COMPLETED' || remoteStatus === 'APPROVED' || remoteStatus === 'CONFIRMED') {
+        tx.status = 'COMPLETED';
+        tx.paid_at = new Date().toISOString();
+        return res.json({ status: 'COMPLETED', paid_at: tx.paid_at });
+      }
+      return res.json({ status: remoteStatus || 'PENDING' });
+    }
+
+    if (result.status === 404) {
+      return res.json({ status: 'PENDING' });
+    }
+  } catch (err) {
+    console.error('Status check error:', err.message);
+  }
+
+  res.json({ status: tx.status });
 });
 
 app.post('/api/webhook', (req, res) => {

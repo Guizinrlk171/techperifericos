@@ -282,13 +282,16 @@ function startPayment() {
 async function checkPaymentManually() {
   if (!currentTransactionId) return;
   try {
-    const response = await fetch(`/api/confirm-payment/${currentTransactionId}`, { method: 'POST' });
+    const response = await fetch(`/api/charge-status/${currentTransactionId}`);
     const data = await response.json();
     if (response.ok && data.status === 'COMPLETED') {
       stopPolling();
       confirmPayment();
+      cart = [];
+      updateCart();
+      setTimeout(() => closePayment(), 2000);
     } else {
-      showToast('Pagamento ainda não confirmado.', true);
+      showToast('Pagamento ainda não confirmado pela SigiloPay.', true);
     }
   } catch (e) {
     showToast('Erro ao verificar pagamento.', true);
@@ -300,6 +303,7 @@ let pollAttempts = 0;
 function startPolling() {
   stopPolling();
   pollAttempts = 0;
+  document.getElementById('pix-poll-status').textContent = 'Aguardando pagamento...';
   pollInterval = setInterval(async () => {
     if (!currentTransactionId) return;
     pollAttempts++;
@@ -308,34 +312,18 @@ function startPolling() {
       const data = await response.json();
       if (data.status === 'COMPLETED') {
         stopPolling();
-        autoFinalize();
+        confirmPayment();
+        cart = [];
+        updateCart();
+        setTimeout(() => closePayment(), 2000);
+        return;
       }
     } catch (e) {
-      document.getElementById('pix-poll-status').textContent = 'Verificando...';
+      // ignore
     }
-    if (pollAttempts >= 4) {
-      stopPolling();
-      autoFinalize();
-    }
-    const remaining = 4 - pollAttempts;
-    if (remaining > 0) {
-      document.getElementById('pix-poll-status').textContent =
-        'Aguardando pagamento... Confirmando automaticamente em ' + (remaining * 5) + 's';
-    }
+    document.getElementById('pix-poll-status').textContent =
+      'Aguardando pagamento... Verificação automática em andamento';
   }, 5000);
-}
-
-function autoFinalize() {
-  confirmPayment();
-  if (currentTransactionId) {
-    fetch(`/api/confirm-payment/${currentTransactionId}`, { method: 'POST' }).catch(() => {});
-  }
-  setTimeout(() => {
-    showToast('Pagamento de ' + formatPrice(currentPixTotal) + ' via PIX aprovado.');
-    cart = [];
-    updateCart();
-    closePayment();
-  }, 2000);
 }
 
 function stopPolling() {
