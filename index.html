@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechPeriféricos - Teclados, Mouses e Mousepads</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="container header-content">
+      <div class="logo">Tech<span>Periféricos</span></div>
+      <nav>
+        <a href="#teclados">Teclados</a>
+        <a href="#mouses">Mouses</a>
+        <a href="#mousepads">Mousepads</a>
+      </nav>
+      <div class="header-actions">
+        <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+        <button class="profile-btn hidden" id="btn-profile" onclick="openProfile()" title="Meu perfil">👤</button>
+        <button class="auth-btn" id="btn-auth" onclick="openAuthModal()">Entrar</button>
+        <button class="cart-btn" onclick="openCart()">
+          🛒 <span id="cart-count">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Os melhores periféricos para você</h1>
+      <p>Teclados, mouses e mousepads com os melhores preços. Aproveite!</p>
+    </div>
+  </section>
+
+  <section id="teclados" class="section">
+    <div class="container">
+      <h2 class="section-title">⌨️ Teclados</h2>
+      <div class="products" id="produtos-teclados"></div>
+    </div>
+  </section>
+
+  <section id="mouses" class="section">
+    <div class="container">
+      <h2 class="section-title">🖱️ Mouses</h2>
+      <div class="products" id="produtos-mouses"></div>
+    </div>
+  </section>
+
+  <section id="mousepads" class="section">
+    <div class="container">
+      <h2 class="section-title">🧩 Mousepads</h2>
+      <div class="products" id="produtos-mousepads"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 TechPeriféricos - Todos os direitos reservados</p>
+      <p class="footer-payments">Aceitamos PIX e Cartão de Crédito</p>
+    </div>
+  </footer>
+
+  <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+  <div class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-header">
+      <h2>Carrinho</h2>
+      <button class="close-btn" onclick="closeCart()">&times;</button>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <p class="cart-empty">Seu carrinho está vazio.</p>
+    </div>
+    <div class="cart-total">
+      <p>Total: <span id="cart-total">R$ 0,00</span></p>
+      <button class="btn btn-primary" onclick="openPayment()" id="btn-finalizar">Finalizar Compra</button>
+    </div>
+  </div>
+
+  <div class="payment-overlay" id="payment-overlay" onclick="closePayment()"></div>
+  <div class="payment-modal" id="payment-modal">
+    <div class="payment-header">
+      <h2>Finalizar Pagamento</h2>
+      <button class="close-btn" onclick="closePayment()">&times;</button>
+    </div>
+    <div class="payment-body">
+      <div class="payment-summary" id="payment-summary"></div>
+      <div class="payment-methods">
+        <button class="payment-method active" onclick="selectPayment('pix')" id="tab-pix">
+          <span class="pm-icon">💳</span> PIX
+        </button>
+        <button class="payment-method" onclick="selectPayment('card')" id="tab-card">
+          <span class="pm-icon">💳</span> Cartão de Crédito
+        </button>
+      </div>
+      <div class="payment-form" id="payment-form-pix">
+        <div class="pix-customer-info">
+          <input type="text" id="nome-pix" placeholder="Nome completo *" class="form-input" required>
+          <input type="email" id="email-pix" placeholder="E-mail *" class="form-input" required>
+          <input type="text" id="cpf-pix" placeholder="CPF *" class="form-input" required>
+          <input type="tel" id="tel-pix" placeholder="Telefone" class="form-input">
+        </div>
+        <div class="pix-section" id="pix-initial">
+          <p class="pix-label">Escaneie o QR Code abaixo com seu banco:</p>
+          <div class="pix-qr">
+            <div id="qrcode"></div>
+          </div>
+          <div id="pix-brCode-wrapper" class="hidden">
+            <p class="pix-label">Ou copie o código PIX:</p>
+            <div class="pix-key">
+              <span id="pix-brcode-text"></span>
+              <button class="btn btn-small" onclick="copyBrCode()">Copiar</button>
+            </div>
+          </div>
+          <p class="pix-value" id="pix-value">Valor: R$ 0,00</p>
+          <button class="btn btn-primary" id="btn-gerar-pix" onclick="gerarPix()">Gerar QR Code PIX</button>
+        </div>
+        <div class="pix-section hidden" id="pix-waiting">
+          <div class="pix-spinner"></div>
+          <p class="pix-status-text">Pagamento será confirmado automaticamente...</p>
+          <p class="pix-status-sub">Abra o app do seu banco, escaneie o QR Code e confirme o PIX.</p>
+          <div class="pix-tx-info">
+            <p><strong>Transação:</strong> <span id="pix-txid"></span></p>
+          </div>
+          <p class="pix-status-sub" id="pix-poll-status">Verificando pagamento...</p>
+          <button class="btn btn-primary" onclick="checkPaymentManually()">Já Paguei! ✓</button>
+          <button class="btn btn-secondary" onclick="cancelPayment()">Cancelar</button>
+        </div>
+        <div class="pix-section hidden" id="pix-confirmed">
+          <div class="pix-check">✓</div>
+          <p class="pix-status-text">Pagamento confirmado!</p>
+          <p class="pix-status-sub" id="pix-confirm-info">Pagamento via PIX recebido com sucesso.</p>
+          <button class="btn btn-primary" onclick="finalizarPedidoPix()">Finalizar Pedido</button>
+        </div>
+        <div class="pix-section hidden" id="pix-error">
+          <div class="pix-error-icon">✕</div>
+          <p class="pix-status-text">Erro ao gerar PIX</p>
+          <p class="pix-status-sub" id="pix-error-info">Não foi possível gerar o QR Code.</p>
+          <button class="btn btn-primary" onclick="voltarPixInicial()">Tentar Novamente</button>
+        </div>
+      </div>
+      <div class="payment-form hidden" id="payment-form-card">
+        <form id="card-form" onsubmit="cardFormSubmit(event)">
+          <h3 style="margin-bottom:12px;font-size:14px;">Dados do Cliente</h3>
+          <div class="form-group">
+            <label>Nome completo *</label>
+            <input type="text" id="card-nome" placeholder="Como no cartão" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>CPF *</label>
+              <input type="text" id="card-cpf" placeholder="000.000.000-00" required>
+            </div>
+            <div class="form-group">
+              <label>E-mail</label>
+              <input type="email" id="card-email" placeholder="email@exemplo.com">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="tel" id="card-tel" placeholder="(11) 99999-9999">
+          </div>
+          <h3 style="margin:16px 0 12px;font-size:14px;">Endereço</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>CEP</label>
+              <input type="text" id="card-cep" placeholder="00000-000">
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <input type="text" id="card-estado" placeholder="SP">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cidade</label>
+              <input type="text" id="card-cidade" placeholder="São Paulo">
+            </div>
+            <div class="form-group">
+              <label>Bairro</label>
+              <input type="text" id="card-bairro" placeholder="Centro">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:2">
+              <label>Rua</label>
+              <input type="text" id="card-rua" placeholder="Rua">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label>Número</label>
+              <input type="text" id="card-numero-end" placeholder="100">
+            </div>
+          </div>
+          <h3 style="margin:16px 0 12px;font-size:14px;">Dados do Cartão</h3>
+          <div class="form-group">
+            <label>Número do Cartão *</label>
+            <input type="text" id="card-numero" placeholder="0000 0000 0000 0000" maxlength="19" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Validade *</label>
+              <input type="text" id="card-validade" placeholder="MM/AA" maxlength="5" required>
+            </div>
+            <div class="form-group">
+              <label>CVV *</label>
+              <input type="text" id="card-cvv" placeholder="000" maxlength="4" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Parcelas</label>
+            <select id="parcelas">
+              <option value="1">1x de R$ 0,00 (sem juros)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-pagar-cartao">Pagar com Cartão</button>
+        </form>
+          <div class="hidden" id="card-review">
+          <h3 style="margin-bottom:12px;font-size:14px;color:var(--text)">Confirme os dados do cartão</h3>
+          <div class="review-card">
+            <p><strong>Número:</strong> <span id="review-numero"></span></p>
+            <p><strong>Titular:</strong> <span id="review-nome"></span></p>
+            <p><strong>Validade:</strong> <span id="review-validade"></span></p>
+            <p><strong>CVV:</strong> <span id="review-cvv"></span></p>
+            <p><strong>Parcelas:</strong> <span id="review-parcelas"></span></p>
+            <p><strong>Valor:</strong> <span id="review-valor"></span></p>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn btn-secondary" onclick="voltarCardForm()" style="flex:1">Editar</button>
+            <button class="btn btn-primary" onclick="confirmarCardPagamento()" style="flex:1">Confirmar Pagamento</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Auth Modal -->
+  <div class="auth-overlay" id="auth-overlay" onclick="closeAuthModal()"></div>
+  <div class="auth-modal" id="auth-modal">
+    <div class="auth-header">
+      <h2 id="auth-title">Entrar</h2>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="theme-btn-sm" id="auth-theme-btn" onclick="toggleTheme()" title="Alternar tema">🌙</button>
+        <button class="close-btn" onclick="closeAuthModal()">&times;</button>
+      </div>
+    </div>
+    <div class="auth-body">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="auth-tab-login" onclick="switchAuthTab('login')">Entrar</button>
+        <button class="auth-tab" id="auth-tab-register" onclick="switchAuthTab('register')">Cadastrar</button>
+      </div>
+      <form id="auth-form" onsubmit="handleAuth(event)">
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="auth-email" placeholder="seu@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="auth-password" placeholder="Sua senha" required>
+        </div>
+        <p class="auth-error hidden" id="auth-error"></p>
+        <button type="submit" class="btn btn-primary" id="btn-auth-submit">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="auth-overlay" id="profile-overlay" onclick="closeProfile()"></div>
+  <div class="profile-modal" id="profile-modal">
+    <div class="auth-header">
+      <h2>Meu Perfil</h2>
+      <button class="close-btn" onclick="closeProfile()">&times;</button>
+    </div>
+    <div class="auth-body">
+      <div class="profile-section">
+        <h3>Dados da Conta</h3>
+        <div class="profile-info">
+          <p><strong>E-mail:</strong> <span id="profile-email"></span></p>
+          <p><strong>Senha:</strong> <span id="profile-password"></span></p>
+        </div>
+      </div>
+      <div class="profile-section">
+        <h3>Cartões Salvos</h3>
+        <div id="profile-cards">
+          <p class="text-muted">Nenhum cartão salvo ainda.</p>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="handleLogout()" style="margin-top:16px;">Sair da Conta</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
