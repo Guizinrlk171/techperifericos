@@ -534,6 +534,10 @@ footer {
   display: none;
 }
 
+#pix-initial {
+  padding: 30px 0;
+}
+
 .pix-label {
   font-size: 0.9rem;
   color: #555;

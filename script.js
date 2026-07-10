@@ -172,6 +172,7 @@ function closePayment() {
 
 function resetPixSections() {
   document.getElementById('pix-initial').classList.remove('hidden');
+  document.getElementById('pix-qr-area').classList.add('hidden');
   document.getElementById('pix-waiting').classList.add('hidden');
   document.getElementById('pix-confirmed').classList.add('hidden');
   document.getElementById('pix-error').classList.add('hidden');
@@ -231,6 +232,9 @@ async function gerarPix() {
 
     currentTransactionId = data.transactionId;
 
+    document.getElementById('pix-initial').classList.add('hidden');
+    document.getElementById('pix-qr-area').classList.remove('hidden');
+
     const qrContainer = document.getElementById('qrcode');
     qrContainer.innerHTML = '';
     if (data.qrCodeDataUrl) {
@@ -274,6 +278,7 @@ function showPixError(message) {
 function voltarPixInicial() {
   document.getElementById('pix-error').classList.add('hidden');
   document.getElementById('pix-initial').classList.remove('hidden');
+  document.getElementById('pix-qr-area').classList.add('hidden');
 }
 
 function copyBrCode() {

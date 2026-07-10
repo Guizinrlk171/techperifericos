@@ -99,6 +99,9 @@
           <input type="text" id="cpf-pix" placeholder="CPF *" class="form-input" required>
         </div>
         <div class="pix-section" id="pix-initial">
+          <button class="btn btn-primary" id="btn-gerar-pix" onclick="gerarPix()">Gerar QR Code PIX</button>
+        </div>
+        <div class="pix-section hidden" id="pix-qr-area">
           <p class="pix-label">Escaneie o QR Code abaixo com seu banco:</p>
           <div class="pix-qr">
             <div id="qrcode"></div>
@@ -111,7 +114,6 @@
             </div>
           </div>
           <p class="pix-value" id="pix-value">Valor: R$ 0,00</p>
-          <button class="btn btn-primary" id="btn-gerar-pix" onclick="gerarPix()">Gerar QR Code PIX</button>
         </div>
         <div class="pix-section hidden" id="pix-waiting">
           <div class="pix-spinner"></div>
