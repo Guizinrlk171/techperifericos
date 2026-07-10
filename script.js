@@ -233,13 +233,14 @@ async function gerarPix() {
 
     const qrContainer = document.getElementById('qrcode');
     qrContainer.innerHTML = '';
-    if (typeof QRCode !== 'undefined') {
-      new QRCode(qrContainer, {
-        text: data.pixCode,
-        width: 200,
-        height: 200
-      });
-    } else {
+    if (data.qrCodeDataUrl) {
+      const img = document.createElement('img');
+      img.src = data.qrCodeDataUrl;
+      img.style.width = '200px';
+      img.style.height = '200px';
+      img.alt = 'QR Code PIX';
+      qrContainer.appendChild(img);
+    } else if (data.pixCode) {
       qrContainer.innerHTML = `<div style="width:200px;height:200px;background:#fff;display:flex;align-items:center;justify-content:center;border-radius:8px;font-family:monospace;font-size:10px;word-break:break-all;padding:8px;color:#000;">${data.pixCode}</div>`;
     }
 

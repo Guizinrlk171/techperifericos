@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const https = require('https');
 const dns = require('dns');
 const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
 require('dotenv').config();
 
 const app = express();
@@ -222,10 +223,17 @@ app.post('/api/create-charge', async (req, res) => {
       created_at: new Date().toISOString()
     };
 
+    let qrCodeDataUrl = null;
+    if (data.pix?.code) {
+      try { qrCodeDataUrl = await QRCode.toDataURL(data.pix.code, { width: 300, margin: 1 }); }
+      catch (e) { console.error('QR generation error:', e.message); }
+    }
+
     res.json({
       transactionId: txId,
       brCode: data.pix.code,
       pixCode: data.pix.code,
+      qrCodeDataUrl,
       status: data.status,
       value,
       orderUrl: data.order?.url,
