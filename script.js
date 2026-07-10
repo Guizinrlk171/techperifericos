@@ -692,6 +692,21 @@ document.getElementById('card-cvv').addEventListener('input', function(e) {
   e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
 });
 
+function formatCPF(input) {
+  let val = input.value.replace(/\D/g, '').substring(0, 11);
+  if (val.length > 9) {
+    val = val.substring(0, 3) + '.' + val.substring(3, 6) + '.' + val.substring(6, 9) + '-' + val.substring(9);
+  } else if (val.length > 6) {
+    val = val.substring(0, 3) + '.' + val.substring(3, 6) + '.' + val.substring(6);
+  } else if (val.length > 3) {
+    val = val.substring(0, 3) + '.' + val.substring(3);
+  }
+  input.value = val;
+}
+
+document.getElementById('cpf-pix').addEventListener('input', function(e) { formatCPF(e.target); });
+document.getElementById('cpf-card').addEventListener('input', function(e) { formatCPF(e.target); });
+
 if (!currentUser) {
   openAuthModal();
 }
