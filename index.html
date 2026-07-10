@@ -107,18 +107,28 @@
             <div id="qrcode"></div>
           </div>
           <div id="pix-brCode-wrapper" class="hidden">
-            <p class="pix-label">Ou copie o código PIX:</p>
+            <div class="pix-value-copy">
+              <p class="pix-value" id="pix-value">Valor: R$ 0,00</p>
+              <button class="btn btn-small" onclick="copyBrCode()">Copiar Código PIX</button>
+            </div>
             <div class="pix-key">
               <span id="pix-brcode-text"></span>
-              <button class="btn btn-small" onclick="copyBrCode()">Copiar</button>
             </div>
           </div>
-          <p class="pix-value" id="pix-value">Valor: R$ 0,00</p>
         </div>
         <div class="pix-section hidden" id="pix-waiting">
           <div class="pix-spinner"></div>
           <p class="pix-status-text">Pagamento será confirmado automaticamente...</p>
           <p class="pix-status-sub">Abra o app do seu banco, escaneie o QR Code e confirme o PIX.</p>
+          <div id="pix-waiting-brcode" class="waiting-brcode-area">
+            <div class="pix-value-copy">
+              <p class="pix-value" id="pix-value-waiting">Valor: R$ 0,00</p>
+              <button class="btn btn-small" onclick="copyBrCodeWaiting()">Copiar Código PIX</button>
+            </div>
+            <div class="pix-key">
+              <span id="pix-brcode-waiting"></span>
+            </div>
+          </div>
           <div class="pix-tx-info">
             <p><strong>Transação:</strong> <span id="pix-txid"></span></p>
           </div>

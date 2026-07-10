@@ -240,8 +240,8 @@ async function gerarPix() {
     if (data.qrCodeDataUrl) {
       const img = document.createElement('img');
       img.src = data.qrCodeDataUrl;
-      img.style.width = '200px';
-      img.style.height = '200px';
+      img.style.width = '260px';
+      img.style.height = '260px';
       img.alt = 'QR Code PIX';
       qrContainer.appendChild(img);
     } else if (data.pixCode) {
@@ -251,8 +251,10 @@ async function gerarPix() {
     const brCodeWrapper = document.getElementById('pix-brCode-wrapper');
     brCodeWrapper.classList.remove('hidden');
     document.getElementById('pix-brcode-text').textContent = data.pixCode;
+    document.getElementById('pix-brcode-waiting').textContent = data.pixCode;
 
     document.getElementById('pix-value').textContent = 'Valor: ' + formatPrice(data.value);
+    document.getElementById('pix-value-waiting').textContent = 'Valor: ' + formatPrice(data.value);
     document.getElementById('pix-txid').textContent = data.transactionId;
 
     btn.textContent = 'QR Code Gerado!';
@@ -283,6 +285,13 @@ function voltarPixInicial() {
 
 function copyBrCode() {
   const text = document.getElementById('pix-brcode-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('Código PIX copiado!');
+  });
+}
+
+function copyBrCodeWaiting() {
+  const text = document.getElementById('pix-brcode-waiting').textContent;
   navigator.clipboard.writeText(text).then(() => {
     showToast('Código PIX copiado!');
   });
