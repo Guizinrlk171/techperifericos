@@ -227,6 +227,24 @@
     </div>
   </div>
 
+  <!-- Product Detail Modal -->
+  <div class="detail-overlay" id="detail-overlay" onclick="closeProductDetail()"></div>
+  <div class="detail-modal" id="detail-modal">
+    <div class="detail-header">
+      <h2 id="detail-name"></h2>
+      <button class="close-btn" onclick="closeProductDetail()">&times;</button>
+    </div>
+    <div class="detail-body">
+      <div class="detail-image" id="detail-image"></div>
+      <div class="detail-price" id="detail-price"></div>
+      <div class="detail-installments" id="detail-installments"></div>
+      <div class="detail-desc" id="detail-desc"></div>
+      <div class="detail-features" id="detail-features"></div>
+      <div class="detail-specs" id="detail-specs"></div>
+      <button class="btn btn-primary" onclick="addToCartFromDetail()" id="btn-detail-cart">Adicionar ao Carrinho</button>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
