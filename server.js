@@ -12,6 +12,8 @@ const PORT = process.env.PORT || 3000;
 
 const SIGILO_PUBLIC_KEY = process.env.SIGILO_PUBLIC_KEY;
 const SIGILO_SECRET_KEY = process.env.SIGILO_SECRET_KEY;
+const AMPLO_PUBLIC_KEY = process.env.AMPLO_PUBLIC_KEY;
+const AMPLO_SECRET_KEY = process.env.AMPLO_SECRET_KEY;
 const JWT_SECRET = process.env.JWT_SECRET || 'techperifericos-dev-secret-2024';
 
 app.use(cors());
@@ -110,6 +112,40 @@ function sigiloRequest(endpoint, bodyStr, method) {
   });
 }
 
+function amploRequest(endpoint, bodyStr, method) {
+  method = method || 'POST';
+  return new Promise((resolve, reject) => {
+    dns.resolve4('app.amplopay.com', (err, addresses) => {
+      if (err) return reject(new Error('DNS fail: ' + err.message));
+      const opts = {
+        hostname: addresses[0],
+        path: '/api/v1/gateway/' + endpoint,
+        method: method,
+        headers: {
+          'x-public-key': AMPLO_PUBLIC_KEY,
+          'x-secret-key': AMPLO_SECRET_KEY,
+          'Content-Type': 'application/json',
+          'Host': 'app.amplopay.com'
+        },
+        rejectUnauthorized: false,
+        servername: 'app.amplopay.com'
+      };
+      const req = https.request(opts, (res) => {
+        let chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => {
+          const text = Buffer.concat(chunks).toString();
+          try { resolve({ status: res.statusCode, data: JSON.parse(text) }); }
+          catch (e) { reject(new Error('Invalid JSON: ' + text.substring(0, 200))); }
+        });
+      });
+      req.on('error', reject);
+      if (bodyStr) req.write(bodyStr);
+      req.end();
+    });
+  });
+}
+
 function formatDoc(doc) {
   if (!doc) return '529.982.247-25';
   const cleaned = doc.replace(/\D/g, '');
@@ -198,6 +234,101 @@ app.post('/api/create-charge', async (req, res) => {
 
   } catch (error) {
     console.error('Error creating PIX charge:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+app.post('/api/create-card-charge', async (req, res) => {
+  try {
+    const { value, installments, card, customer, products: reqProducts } = req.body;
+
+    if (!value || value <= 0) {
+      return res.status(400).json({ error: 'Valor inválido' });
+    }
+    if (!card || !card.number || !card.owner || !card.expiresAt || !card.cvv) {
+      return res.status(400).json({ error: 'Dados do cartão incompletos' });
+    }
+    if (!customer) {
+      return res.status(400).json({ error: 'Dados do cliente obrigatórios' });
+    }
+
+    const identifier = crypto.randomUUID();
+    const products = buildProducts(reqProducts || [], value);
+
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || '127.0.0.1';
+
+    const address = customer.address || {};
+    const body = {
+      identifier,
+      amount: value,
+      client: {
+        name: customer.name || 'Cliente',
+        email: customer.email || 'cliente@email.com',
+        phone: formatPhone(customer.phone),
+        document: formatDoc(customer.document || customer.taxID),
+        address: {
+          country: 'BR',
+          state: address.state || 'SP',
+          city: address.city || 'São Paulo',
+          neighborhood: address.neighborhood || 'Centro',
+          zipCode: address.zipCode || '12345-678',
+          street: address.street || 'Rua Principal',
+          number: address.number || '123',
+          complement: address.complement || ''
+        }
+      },
+      clientIp,
+      card: {
+        number: card.number.replace(/\s/g, ''),
+        owner: card.owner,
+        expiresAt: card.expiresAt,
+        cvv: card.cvv,
+        statementDescriptor: 'TECHPERIFERICOS'
+      },
+      installments: installments || 1,
+      products,
+      metadata: {
+        provider: 'TechPeriféricos',
+        orderId: identifier
+      }
+    };
+
+    console.log('AmploPay card request:', JSON.stringify(body));
+
+    const { status, data } = await amploRequest('card/receive', JSON.stringify(body));
+
+    console.log('AmploPay card response:', JSON.stringify(data, null, 2));
+
+    if (status !== 201 && status !== 200) {
+      return res.status(status).json({
+        error: 'Erro ao processar cartão',
+        details: data,
+        message: data?.message || data?.errorDescription || 'Erro desconhecido'
+      });
+    }
+
+    const txId = data.transactionId || identifier;
+    const mappedStatus = data.status === 'OK' ? 'COMPLETED' : data.status || 'PENDING';
+    transactions[txId] = {
+      status: mappedStatus,
+      value,
+      amploId: data.transactionId,
+      identifier,
+      card: { last4: card.number.slice(-4), owner: card.owner },
+      created_at: new Date().toISOString()
+    };
+
+    res.json({
+      transactionId: txId,
+      status: data.status,
+      value,
+      orderUrl: data.order?.url,
+      receiptUrl: data.order?.receiptUrl,
+      fee: data.fee
+    });
+
+  } catch (error) {
+    console.error('Error creating card charge:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

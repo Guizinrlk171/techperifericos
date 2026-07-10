@@ -58,7 +58,7 @@
   <footer>
     <div class="container">
       <p>&copy; 2026 TechPeriféricos - Todos os direitos reservados</p>
-      <p class="footer-payments">Aceitamos PIX</p>
+      <p class="footer-payments">Aceitamos PIX e Cartão de Crédito</p>
     </div>
   </footer>
 
@@ -90,7 +90,7 @@
           <span class="pm-icon">💳</span> PIX
         </button>
         <button class="payment-method" onclick="selectPayment('card')" id="tab-card">
-          <span class="pm-icon">💳</span> Cartão de Crédito <span style="font-size:0.65rem;color:#999;display:block">Em breve</span>
+          <span class="pm-icon">💳</span> Cartão de Crédito
         </button>
       </div>
       <div class="payment-form" id="payment-form-pix">
@@ -136,6 +136,41 @@
           <p class="pix-status-text">Erro ao gerar PIX</p>
           <p class="pix-status-sub" id="pix-error-info">Não foi possível gerar o QR Code.</p>
           <button class="btn btn-primary" onclick="voltarPixInicial()">Tentar Novamente</button>
+        </div>
+      <div class="payment-form hidden" id="payment-form-card">
+        <div class="card-customer-info">
+          <input type="text" id="nome-card" placeholder="Nome completo *" class="form-input" required>
+          <input type="email" id="email-card" placeholder="E-mail *" class="form-input" required>
+          <input type="text" id="cpf-card" placeholder="CPF *" class="form-input" required>
+        </div>
+        <div class="card-section" id="card-initial">
+          <div class="card-fields">
+            <input type="text" id="card-number" placeholder="Número do cartão *" class="form-input" maxlength="19" inputmode="numeric">
+            <input type="text" id="card-owner" placeholder="Nome do titular *" class="form-input">
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="card-expiry" placeholder="Validade (MM/AA) *" class="form-input" maxlength="5" style="flex:1">
+              <input type="text" id="card-cvv" placeholder="CVV *" class="form-input" maxlength="4" style="flex:1;letter-spacing:2px">
+            </div>
+            <select id="card-installments" class="form-input"></select>
+          </div>
+          <button class="btn btn-primary" id="btn-pagar-cartao" onclick="processarCartao()" style="margin-top:12px;width:100%">Pagar com Cartão</button>
+        </div>
+        <div class="pix-section hidden" id="card-processing">
+          <div class="pix-spinner"></div>
+          <p class="pix-status-text">Processando pagamento...</p>
+          <p class="pix-status-sub">Aguarde enquanto confirmamos seu pagamento.</p>
+        </div>
+        <div class="pix-section hidden" id="card-success">
+          <div class="pix-check">✓</div>
+          <p class="pix-status-text">Pagamento aprovado!</p>
+          <p class="pix-status-sub" id="card-success-info">Cartão aprovado com sucesso.</p>
+          <button class="btn btn-primary" onclick="finalizarPedidoCard()">Finalizar Pedido</button>
+        </div>
+        <div class="pix-section hidden" id="card-error">
+          <div class="pix-error-icon">✕</div>
+          <p class="pix-status-text">Erro no pagamento</p>
+          <p class="pix-status-sub" id="card-error-info">Não foi possível processar o cartão.</p>
+          <button class="btn btn-primary" onclick="voltarCardInicial()">Tentar Novamente</button>
         </div>
       </div>
     </div>

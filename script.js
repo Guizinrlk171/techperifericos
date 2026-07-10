@@ -141,10 +141,21 @@ function openPayment() {
 
   currentPixTotal = total;
   resetPixSections();
+  resetCardSections();
 
   document.getElementById('cpf-pix').value = '';
   document.getElementById('nome-pix').value = '';
   document.getElementById('email-pix').value = '';
+  document.getElementById('cpf-card').value = '';
+  document.getElementById('nome-card').value = '';
+  document.getElementById('email-card').value = '';
+  document.getElementById('card-number').value = '';
+  document.getElementById('card-owner').value = '';
+  document.getElementById('card-expiry').value = '';
+  document.getElementById('card-cvv').value = '';
+
+  populateInstallments();
+  selectPayment('pix');
 
   closeCart();
   document.getElementById('payment-overlay').classList.add('active');
@@ -155,6 +166,7 @@ function closePayment() {
   document.getElementById('payment-overlay').classList.remove('active');
   document.getElementById('payment-modal').classList.remove('active');
   resetPixSections();
+  resetCardSections();
   stopPolling();
 }
 
@@ -172,11 +184,9 @@ function resetPixSections() {
 function selectPayment(method) {
   document.getElementById('tab-pix').classList.toggle('active', method === 'pix');
   document.getElementById('tab-card').classList.toggle('active', method === 'card');
-  if (method === 'card') {
-    showToast('Cartão de crédito estará disponível em breve!');
-    document.getElementById('tab-pix').classList.add('active');
-    document.getElementById('tab-card').classList.remove('active');
-  }
+  document.getElementById('payment-form-pix').classList.toggle('hidden', method !== 'pix');
+  document.getElementById('payment-form-card').classList.toggle('hidden', method !== 'card');
+  if (method === 'card') populateInstallments();
 }
 
 async function gerarPix() {
@@ -355,6 +365,122 @@ function finalizarPedidoPix() {
   closePayment();
 }
 
+/* ===== Card ===== */
+function populateInstallments() {
+  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const sel = document.getElementById('card-installments');
+  const max = 12;
+  sel.innerHTML = '';
+  for (let i = 1; i <= max; i++) {
+    const val = (total / i).toFixed(2).replace('.', ',');
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `${i}x de R$ ${val}${i === 1 ? ' à vista' : ' sem juros'}`;
+    sel.appendChild(opt);
+  }
+}
+
+function resetCardSections() {
+  document.getElementById('card-initial').classList.remove('hidden');
+  document.getElementById('card-processing').classList.add('hidden');
+  document.getElementById('card-success').classList.add('hidden');
+  document.getElementById('card-error').classList.add('hidden');
+  document.getElementById('btn-pagar-cartao').disabled = false;
+  document.getElementById('btn-pagar-cartao').textContent = 'Pagar com Cartão';
+}
+
+async function processarCartao() {
+  const nome = document.getElementById('nome-card').value.trim();
+  const email = document.getElementById('email-card').value.trim();
+  const cpf = document.getElementById('cpf-card').value.trim();
+  const number = document.getElementById('card-number').value.trim();
+  const owner = document.getElementById('card-owner').value.trim();
+  const expiry = document.getElementById('card-expiry').value.trim();
+  const cvv = document.getElementById('card-cvv').value.trim();
+  const installments = parseInt(document.getElementById('card-installments').value);
+
+  if (!nome || !email || !cpf || !number || !owner || !expiry || !cvv) {
+    showToast('Preencha todos os campos obrigatórios.', true);
+    return;
+  }
+
+  const btn = document.getElementById('btn-pagar-cartao');
+  btn.disabled = true;
+  btn.textContent = 'Processando...';
+  document.getElementById('card-initial').classList.add('hidden');
+  document.getElementById('card-processing').classList.remove('hidden');
+
+  const [mm, aa] = expiry.split('/');
+  const fullYear = aa.length === 2 ? '20' + aa : aa;
+
+  try {
+    const response = await fetch('/api/create-card-charge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        value: currentPixTotal,
+        installments,
+        customer: {
+          name: nome,
+          email: email,
+          phone: '(11) 99999-9999',
+          taxID: cpf,
+          document: cpf
+        },
+        card: {
+          number,
+          owner,
+          expiresAt: fullYear + '-' + mm,
+          cvv
+        },
+        products: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          qty: item.qty,
+          price: item.price
+        }))
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      document.getElementById('card-processing').classList.add('hidden');
+      document.getElementById('card-error').classList.remove('hidden');
+      document.getElementById('card-error-info').textContent = data.message || data.error || 'Erro ao processar cartão.';
+      btn.disabled = false;
+      btn.textContent = 'Pagar com Cartão';
+      return;
+    }
+
+    document.getElementById('card-processing').classList.add('hidden');
+    document.getElementById('card-success').classList.remove('hidden');
+    document.getElementById('card-success-info').textContent =
+      `Pagamento de ${formatPrice(data.value)} aprovado! Transação: ${data.transactionId.substring(0, 12)}...`;
+    showToast('Cartão aprovado!');
+
+  } catch (error) {
+    document.getElementById('card-processing').classList.add('hidden');
+    document.getElementById('card-error').classList.remove('hidden');
+    document.getElementById('card-error-info').textContent = 'Erro de conexão com o servidor.';
+    btn.disabled = false;
+    btn.textContent = 'Pagar com Cartão';
+  }
+}
+
+function voltarCardInicial() {
+  document.getElementById('card-error').classList.add('hidden');
+  document.getElementById('card-initial').classList.remove('hidden');
+  resetCardSections();
+}
+
+function finalizarPedidoCard() {
+  showToast('Pedido confirmado! Pagamento de ' + formatPrice(currentPixTotal) + ' no cartão aprovado.');
+  cart = [];
+  updateCart();
+  closePayment();
+}
+
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
@@ -498,6 +624,24 @@ function toggleTheme() {
 
 applyTheme();
 loadAuth();
+
+document.getElementById('card-number').addEventListener('input', function(e) {
+  let val = e.target.value.replace(/\D/g, '').substring(0, 16);
+  e.target.value = val.replace(/(\d{4})(?=\d)/g, '$1 ');
+});
+
+document.getElementById('card-expiry').addEventListener('input', function(e) {
+  let val = e.target.value.replace(/\D/g, '').substring(0, 4);
+  if (val.length >= 3) {
+    e.target.value = val.substring(0, 2) + '/' + val.substring(2);
+  } else {
+    e.target.value = val;
+  }
+});
+
+document.getElementById('card-cvv').addEventListener('input', function(e) {
+  e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
+});
 
 if (!currentUser) {
   openAuthModal();
